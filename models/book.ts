@@ -32,10 +32,12 @@ export interface IBook extends Document {
  * @extends Model
  * @property {Function} getAllBooksWithAuthors - A function to get all books with authors.
  * @property {Function} getBookCount - A function to get the count of books.
+ * @property {Function} getBookDetails - A function to get the details of a specific book.
  */
 interface IBookModel extends Model<IBook> {
   getAllBooksWithAuthors(projectionOpts: string, sortOpts?: { [key: string]: 1 | -1 }): Promise<IBook[]>;
   getBookCount(fitler?: FilterQuery<IBook>): Promise<number>;
+  getBookDetails(bookId: string): Promise<any>;
 }
 
 /**
@@ -81,6 +83,40 @@ BookSchema.statics.getAllBooksWithAuthors = async function (projection: string, 
  */
 BookSchema.statics.getBookCount = async function (filter?: FilterQuery<IBook>): Promise<number> {
   return this.countDocuments(filter || {});
+}
+
+/**
+ * retrieves the details of a specific book including its author information and book instances
+ * @param bookId the ID of the book to retrieve details for
+ * @returns a promise that resolves to the book details or null if not found
+ */
+BookSchema.statics.getBookDetails = async function(bookId: string): Promise<any> {
+  try {
+    const BookInstance = mongoose.model('BookInstance');
+    
+    // Find book by ID and populate author information
+    const book = await this.findById(bookId).populate('author');
+    
+    if (!book) {
+      return null;
+    }
+    
+    // Get all book instances for this book
+    const bookInstances = await BookInstance.find({ book: bookId });
+    
+    // Format response with required fields
+    return {
+      title: book.title,
+      author: book.author.name,
+      bookInstances: bookInstances.map(instance => ({
+        imprint: instance.imprint,
+        status: instance.status
+      }))
+    };
+  } catch (error) {
+    console.error('Error getting book details:', error);
+    return null;
+  }
 }
 
 /**

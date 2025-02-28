@@ -37,10 +37,15 @@ export default function LibClient() {
           showDtls = true;
         }
         if (contentType === 'book_dtls') {
-          const copies = res.data.copies;
-          res.data = copies.map((copy: { imprint: string, status: string }) => {
-            return copy.imprint + ' | ' + copy.status;
+          const { title, author, bookInstances } = res.data;
+          // Display book title and author at the top
+          const headerInfo = [`Title: ${title}`, `Author: ${author}`];
+          // Map book instances to display format
+          const instancesInfo = bookInstances.map((instance: { imprint: string, status: string }) => {
+            return `Copy: ${instance.imprint} | Status: ${instance.status}`;
           });
+          // Combine header and instances information
+          res.data = [...headerInfo, ...instancesInfo];
         }
         setContent({ data: res.data, dtls: showDtls });
       });
